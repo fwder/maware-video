@@ -63,7 +63,7 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title></title>
+<title><?php echo $json["name"]." - Maware"; ?></title>
 <meta name="viewport" content="initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
 <meta name="renderer" content="webkit" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
