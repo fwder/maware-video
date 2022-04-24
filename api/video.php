@@ -17,8 +17,7 @@
         hls.loadSource('<?php echo $_GET['url'] ?>')
     })
     
-    // player.mount('#nplayer')
-    player.mount(document.body)
+    player.mount('#nplayer')
 </script>
 </body>
 </html>
