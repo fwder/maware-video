@@ -7,6 +7,7 @@ if($_SERVER['SERVER_PORT'] != '80') {
 } else {
     $url .= $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'];
 }
+$url = str_replace("http://127.0.0.1:8000","https://v.maware.cc",$url);
 return $url;
 }
 function changeURLParam($url, $name, $value)
