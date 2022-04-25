@@ -1,5 +1,92 @@
 <?php 
 
+ini_set('user_agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36');
+function xmlToArray($xml, $options = array()) {
+    $defaults = array(
+        'namespaceSeparator' => ':',//you may want this to be something other than a colon
+        'attributePrefix' => '@',   //to distinguish between attributes and nodes with the same name
+        'alwaysArray' => array(),   //array of xml tag names which should always become arrays
+        'autoArray' => true,        //only create arrays for tags which appear more than once
+        'textContent' => '$',       //key used for the text content of elements
+        'autoText' => true,         //skip textContent key if node has no attributes or child nodes
+        'keySearch' => false,       //optional search and replace on tag and attribute names
+        'keyReplace' => false       //replace values for above search values (as passed to str_replace())
+    );
+    $options = array_merge($defaults, $options);
+    $namespaces = $xml->getDocNamespaces();
+    $namespaces[''] = null; //add base (empty) namespace
+ 
+    //get attributes from all namespaces
+    $attributesArray = array();
+    foreach ($namespaces as $prefix => $namespace) {
+        foreach ($xml->attributes($namespace) as $attributeName => $attribute) {
+            //replace characters in attribute name
+            if ($options['keySearch']) $attributeName =
+                    str_replace($options['keySearch'], $options['keyReplace'], $attributeName);
+            $attributeKey = $options['attributePrefix']
+                    . ($prefix ? $prefix . $options['namespaceSeparator'] : '')
+                    . $attributeName;
+            $attributesArray[$attributeKey] = (string)$attribute;
+        }
+    }
+ 
+    //get child nodes from all namespaces
+    $tagsArray = array();
+    foreach ($namespaces as $prefix => $namespace) {
+        foreach ($xml->children($namespace) as $childXml) {
+            //recurse into child nodes
+            $childArray = xmlToArray($childXml, $options);
+            // list($childTagName, $childProperties) = each($childArray); //旧版写法
+            foreach($childArray as $childTagName => $childProperties);
+ 
+            //replace characters in tag name
+            if ($options['keySearch']) $childTagName =
+                    str_replace($options['keySearch'], $options['keyReplace'], $childTagName);
+            //add namespace prefix, if any
+            if ($prefix) $childTagName = $prefix . $options['namespaceSeparator'] . $childTagName;
+ 
+            if (!isset($tagsArray[$childTagName])) {
+                //only entry with this key
+                //test if tags of this type should always be arrays, no matter the element count
+                $tagsArray[$childTagName] =
+                        in_array($childTagName, $options['alwaysArray']) || !$options['autoArray']
+                        ? array($childProperties) : $childProperties;
+            } elseif (
+                is_array($tagsArray[$childTagName]) && array_keys($tagsArray[$childTagName])
+                === range(0, count($tagsArray[$childTagName]) - 1)
+            ) {
+                //key already exists and is integer indexed array
+                $tagsArray[$childTagName][] = $childProperties;
+            } else {
+                //key exists so convert to integer indexed array with previous value in position 0
+                $tagsArray[$childTagName] = array($tagsArray[$childTagName], $childProperties);
+            }
+        }
+    }
+ 
+    //get text content of node
+    $textContentArray = array();
+    $plainText = trim((string)$xml);
+    if ($plainText !== '') $textContentArray[$options['textContent']] = $plainText;
+ 
+    //stick it all together
+    $propertiesArray = !$options['autoText'] || $attributesArray || $tagsArray || ($plainText === '')
+            ? array_merge($attributesArray, $tagsArray, $textContentArray) : $plainText;
+ 
+    //return node as array
+    return array(
+        $xml->getName() => $propertiesArray
+    );
+}
+function curl_get($url, $gzip=false){
+$curl = curl_init($url);
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+if($gzip) curl_setopt($curl, CURLOPT_ENCODING, "gzip"); // 关键在这里
+$content = curl_exec($curl);
+curl_close($curl);
+return $content;
+}
 function getUrl() {
 $url = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 if($_SERVER['SERVER_PORT'] != '80') {
@@ -24,9 +111,44 @@ function changeURLParam($url, $name, $value)
         }
     }
 }
+function danmakuCmp($a,$b){
+    return ((float)explode(',',$a["@p"])[0]) > ((float)explode(',',$b["@p"])[0]);
+}
+function getDanmaku($danmaku_url){
+    $xml_danmaku = curl_get($danmaku_url, true);
+    $xmlNode = simplexml_load_string($xml_danmaku);
+    $danmaku_array_resource = xmlToArray($xmlNode);
+    $danmaku_list = $danmaku_array_resource["i"]["d"];
+    usort($danmaku_list, "danmakuCmp");
+    $danmaku_json_string = "[\n";
+    $iop = 0;
+    foreach ($danmaku_list as $d){
+		$dan_msg = explode(',',$d["@p"]);
+		$dan_time = $dan_msg[0];
+		$dan_color = $dan_msg[3];
+		$dan_text = str_replace("'",'"',$d["$"]);
+		$dan_type = "scroll";
+		if($dan_msg[1]=='1'||$dan_msg[1]=='2'||$dan_msg[1]=='3'){
+		    $dan_type = "scroll";
+		}else if($dan_msg[1]=='4'){
+		    $dan_type = "bottom";
+		}else if($dan_msg[1]=='5'){
+		    $dan_type = "top";
+		}else{
+		    continue;
+		}
+		if($iop==0){
+		    $danmaku_json_string .= "{ time: ".$dan_time.", text: '".$dan_text."', color: '#".dechex($dan_color)."', type: '".$dan_type."'}";
+		    $iop = 1;
+		}else{
+		    $danmaku_json_string .= ",\n{ time: ".$dan_time.", text: '".$dan_text."', color: '#".dechex($dan_color)."', type: '".$dan_type."'}";
+		}
+	}
+    $danmaku_json_string .= "\n]";
+    return $danmaku_json_string;
+}
 
 if($_GET['id']!=''&&$_GET['type']!=''&&$_GET['url']==''){
-    ini_set('user_agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36');
     $node_json = json_decode(file_get_contents("https://raw.githubusercontent.com/AnimeCDN/AnimeCDN/master/node/node.json"), true);
     $mix_json = json_decode(file_get_contents("https://raw.githubusercontent.com/AnimeCDN/AnimeCDN/master/index.json"), true);
     $json_url = $mix_json[$_GET['type']][((int)$_GET['id'])-1]["url"];
@@ -34,7 +156,6 @@ if($_GET['id']!=''&&$_GET['type']!=''&&$_GET['url']==''){
     // header("content-type:application/json");
     // var_dump($json["tags"]);
 }else if($_GET['id']==''&&$_GET['type']==''&&$_GET['url']!=''){
-    ini_set('user_agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36');
     $node_json = json_decode(file_get_contents("https://raw.githubusercontent.com/AnimeCDN/AnimeCDN/master/node/node.json"), true);
     $json = json_decode(file_get_contents($_GET['url']), true);
 }else{
@@ -47,11 +168,21 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
     if($_GET['proxy']!=''){
         $initial_url = str_replace("raw.githubusercontent.com", $_GET['proxy'], $initial_url);
     }
+    if($json["parts"][$_GET['clar']][((int)$_GET['p'])-1]["danmaku"] != ''){
+        $initial_danmaku = getDanmaku($json["parts"][$_GET['clar']][((int)$_GET['p'])-1]["danmaku"]);
+    }else if($_GET['danmaku'] != ''){
+        $initial_danmaku = getDanmaku($_GET['danmaku']);
+    }
     $initial_name = $json["name"]."-"."第".$_GET['p']."集-".$json["parts"][$_GET['clar']][((int)$_GET['p'])-1]["title"]."-".$_GET['clar'];
 }else{
     $initial_url = $json["parts"][$json["clarity"][0]][0]["url"];
     if($_GET['proxy']!=''){
         $initial_url = str_replace("raw.githubusercontent.com", $_GET['proxy'], $initial_url);
+    }
+    if($json["parts"][$json["clarity"][0]][0]["danmaku"] != ''){
+        $initial_danmaku = getDanmaku($json["parts"][$json["clarity"][0]][0]["danmaku"]);
+    }else if($_GET['danmaku'] != ''){
+        $initial_danmaku = getDanmaku($_GET['danmaku']);
     }
     $initial_name = $json["name"]."-"."第1集-".$json["parts"][$json["clarity"][0]][0]["title"]."-".$json["clarity"][0];
 }
@@ -62,13 +193,17 @@ $waline_page_url = changeURLParam($waline_page_url,"type","");
 $waline_page_url = changeURLParam($waline_page_url,"proxy","");
 $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
 
+if($initial_danmaku == ""){
+    $initial_danmaku = "[{ time: 1, text: '当前资源没有弹幕哦~', color: '#FFFFFF', type: 'top'}]";
+}
+
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title><?php echo $json["name"]." - Maware"; ?></title>
+<title><?php echo $initial_name." - Maware"; ?></title>
 <meta name="viewport" content="initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
 <meta name="renderer" content="webkit" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
@@ -78,6 +213,7 @@ $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
 <script src="https://cdn.jsdelivr.net/npm/nplayer@latest/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@waline/client/dist/Waline.min.js"></script>
+<script src="https://unpkg.com/@nplayer/danmaku@latest/dist/index.min.js"></script>
 </head>
 <body class="fed-min-width">
     
@@ -259,8 +395,9 @@ $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
 		<p class="fed-text-center fed-text-black"></p>
 		<p class="fed-text-center fed-text-black fed-hide"></p>
 			 <div class="masked">
-    <h4><p class="fed-text-center fed-text-black">&nbsp;&nbsp;&nbsp;免责说明：本站所有视频均来自互联网收集而来，版权归原创者所有，如果侵犯了你的权益，请通过留言版给我们留言，我们会及时删除侵权内容，谢谢合作。</p>
-		        <p class="fed-text-center fed-text-black">&nbsp;&nbsp;&nbsp;本站由 AnimeCDN 提供服务。</p>
+    <h4><p class="fed-text-center fed-text-black">&nbsp;&nbsp;&nbsp;免责说明：本站所有视频均来自互联网收集而来，版权归原创者所有，如果侵犯了你的权益，请通过 <a target="_blank" href="https://github.com/AnimeCDN/AnimeCDN/issues/new?assignees=&labels=%E8%B5%84%E6%BA%90%E4%B8%BE%E6%8A%A5&template=report.yml"> AnimeCDN资源举报页面 </a>进行举报，我们会及时删除侵权内容，谢谢合作。</p>
+    <p class="fed-text-center fed-text-black">&nbsp;&nbsp;&nbsp;如果您有热爱的番剧资源，并想提交给本站，请通过 <a target="_blank" href="https://github.com/AnimeCDN/AnimeCDN/issues/new?assignees=&labels=%E8%B5%84%E6%BA%90%E6%8F%90%E4%BA%A4&template=commit.yml"> AnimeCDN资源提交页面 </a>进行提交，我们会及时审核，感谢您的支持！</p>
+		        <p class="fed-text-center fed-text-black">&nbsp;&nbsp;&nbsp;本站由<a target="_blank" href="https://github.com/AnimeCDN/AnimeCDN"> AnimeCDN </a>提供服务。</p>
 		<p class="fed-text-center fed-text-black">&copy;&nbsp;2022&nbsp;<a class="fed-font-xiv" href="" target="_blank">Maware</a></p>
    </h4>
 </div>
@@ -301,7 +438,7 @@ $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
                 let dataURL = URL.createObjectURL(blob)
                 const link = document.createElement('a')
                 link.href = dataURL
-                link.download = 'Pic.png'
+                link.download = 'pic.png'
                 link.style.display = 'none'
                 document.body.appendChild(link)
                 link.click()
@@ -311,8 +448,22 @@ $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
         }
     }
 
+    const danmakuOptions = {
+        speed: 0.5,
+        maxPerInsert: 3000,
+        unlimited: true,
+        zIndex: 3000,
+        poolSize: 3000,
+        area: 1,
+        items: <?php echo $initial_danmaku; ?>
+    }
+    // [
+    //     { time: 1, text: '弹幕～' }
+    // ]
+
     const hls = new Hls()
     const player = new NPlayer.Player({
+        plugins: [new NPlayerDanmaku(danmakuOptions)],
         themeColor: 'rgba(35,173,229, 1)',
         progressBg: 'rgba(35,173,229, 1)',
         volumeProgressBg: 'rgba(35,173,229, 1)',
@@ -344,7 +495,6 @@ $waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
         path: "<?php echo $waline_page_url; ?>",
         serverURL: 'https://comment.maware.cc/'
     });
-
     
 </script>
 </body>
