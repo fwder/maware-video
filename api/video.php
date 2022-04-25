@@ -210,6 +210,7 @@ if($initial_danmaku == ""){
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <link rel="stylesheet" type="text/css" href="https://v.maware.cc/video.css" />
+<link rel="icon" type="image/png" href="https://cdn.maware.cc/assets/images/favicon.ico">
 <script src="https://cdn.jsdelivr.net/npm/nplayer@latest/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@waline/client/dist/Waline.min.js"></script>
