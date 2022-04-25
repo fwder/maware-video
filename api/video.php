@@ -38,8 +38,7 @@ if($_GET['id']!=''&&$_GET['type']!=''&&$_GET['url']==''){
     $node_json = json_decode(file_get_contents("https://raw.githubusercontent.com/AnimeCDN/AnimeCDN/master/node/node.json"), true);
     $json = json_decode(file_get_contents($_GET['url']), true);
 }else{
-    header("content-type:application/json");
-    echo "参数错误！";
+    Header("Location: https://v.maware.cc/api/video?type=video&id=1"); 
     exit(0);
 }
 
