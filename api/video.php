@@ -1,3 +1,7 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <?php 
 
 ini_set('user_agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36');
@@ -212,11 +216,6 @@ if($initial_danmaku == ""){
 }
 
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title><?php echo $initial_name." - Maware"; ?></title>
 <meta name="viewport" content="initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
 <meta name="renderer" content="webkit" />
