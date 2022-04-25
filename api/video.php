@@ -130,7 +130,7 @@ function getDanmaku($danmaku_url){
 		$dan_msg = explode(',',$d["@p"]);
 		$dan_time = $dan_msg[0];
 		$dan_color = $dan_msg[3];
-		$dan_text = str_replace("'",'"',$d["$"]);
+		$dan_text = str_replace("\\","/",str_replace("'",'"',$d["$"]));
 		$dan_type = "scroll";
 		if($dan_msg[1]=='1'||$dan_msg[1]=='2'||$dan_msg[1]=='3'){
 		    $dan_type = "scroll";
