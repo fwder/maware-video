@@ -60,6 +60,7 @@ $waline_page_url = changeURLParam(getUrl(),"clar","");
 $waline_page_url = changeURLParam($waline_page_url,"p","");
 $waline_page_url = changeURLParam($waline_page_url,"type","");
 $waline_page_url = changeURLParam($waline_page_url,"proxy","");
+$waline_page_url = changeURLParam($waline_page_url,"information",$json["name"]);
 
 ?>
 
