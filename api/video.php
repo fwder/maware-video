@@ -168,8 +168,15 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
     if($_GET['proxy']!=''){
         $initial_url = str_replace("raw.githubusercontent.com", $_GET['proxy'], $initial_url);
     }
-    if($json["parts"][$_GET['clar']][((int)$_GET['p'])-1]["danmaku"] != ''){
-        $initial_danmaku = getDanmaku($json["parts"][$_GET['clar']][((int)$_GET['p'])-1]["danmaku"]);
+    if($json["danmaku"] != ''){
+        if($_GET['type']=='anime'){
+            $season_id = json_decode(curl_get("https://api.bilibili.com/pgc/review/user?media_id=".str_replace("md","",$json["danmaku"])),true)["result"]["media"]["season_id"];
+            $cid = json_decode(curl_get("https://api.bilibili.com/pgc/web/season/section?season_id=".$season_id),true)["result"]["main_section"]["episodes"][((int)$_GET['p'])-1]["cid"];
+            $initial_danmaku = getDanmaku("https://comment.bilibili.com/".$cid.".xml");
+        }else{
+            $cid = json_decode(curl_get("https://api.bilibili.com/x/player/pagelist?bvid=".$json["danmaku"]."&jsonp=jsonp"),true)["data"][((int)$_GET['p'])-1]["cid"];
+            $initial_danmaku = getDanmaku("https://comment.bilibili.com/".$cid.".xml");
+        }
     }else if($_GET['danmaku'] != ''){
         $initial_danmaku = getDanmaku($_GET['danmaku']);
     }
@@ -179,8 +186,15 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
     if($_GET['proxy']!=''){
         $initial_url = str_replace("raw.githubusercontent.com", $_GET['proxy'], $initial_url);
     }
-    if($json["parts"][$json["clarity"][0]][0]["danmaku"] != ''){
-        $initial_danmaku = getDanmaku($json["parts"][$json["clarity"][0]][0]["danmaku"]);
+    if($json["danmaku"] != ''){
+        if($_GET['type']=='anime'){
+            $season_id = json_decode(curl_get("https://api.bilibili.com/pgc/review/user?media_id=".str_replace("md","",$json["danmaku"])),true)["result"]["media"]["season_id"];
+            $cid = json_decode(curl_get("https://api.bilibili.com/pgc/web/season/section?season_id=".$season_id),true)["result"]["main_section"]["episodes"][0]["cid"];
+            $initial_danmaku = getDanmaku("https://comment.bilibili.com/".$cid.".xml");
+        }else{
+            $cid = json_decode(curl_get("https://api.bilibili.com/x/player/pagelist?bvid=".$json["danmaku"]."&jsonp=jsonp"),true)["data"][0]["cid"];
+            $initial_danmaku = getDanmaku("https://comment.bilibili.com/".$cid.".xml");
+        }
     }else if($_GET['danmaku'] != ''){
         $initial_danmaku = getDanmaku($_GET['danmaku']);
     }
