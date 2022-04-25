@@ -122,7 +122,7 @@ function getDanmaku($danmaku_url){
     $xml_danmaku = curl_get($danmaku_url, true);
     $xmlNode = simplexml_load_string($xml_danmaku);
     $danmaku_array_resource = xmlToArray($xmlNode);
-    $danmaku_list = $danmaku_array_resource["i"]["d"];
+    $danmaku_list = array_slice($danmaku_array_resource["i"]["d"], 0, 500);
     usort($danmaku_list, "danmakuCmp");
     $danmaku_json_string = "[\n";
     $iop = 0;
