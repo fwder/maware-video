@@ -57,6 +57,11 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
     $initial_name = $json["name"]."-"."第1集-".$json["parts"][$json["clarity"][0]][0]["title"]."-".$json["clarity"][0];
 }
 
+$waline_page_url = changeURLParam(getUrl(),"clar","");
+$waline_page_url = changeURLParam($waline_page_url,"p","");
+$waline_page_url = changeURLParam($waline_page_url,"type","");
+$waline_page_url = changeURLParam($waline_page_url,"proxy","");
+
 ?>
 
 <!DOCTYPE html>
@@ -69,9 +74,10 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-<link rel="stylesheet" type="text/css" href="https://v.maware.cc/video.css" />
+<link rel="stylesheet" type="text/css" href="./video.css" />
 <script src="https://cdn.jsdelivr.net/npm/nplayer@latest/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@waline/client/dist/Waline.min.js"></script>
 </head>
 <body class="fed-min-width">
     
@@ -237,6 +243,14 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
     ?>
     </ul>
 </div>
+<div class="fed-tabs-info  fed-rage-foot fed-part-rows fed-part-layout fed-back-whits fed-play-data" data-name="评论区">
+    <div class="fed-play-item fed-drop-item fed-visible">
+		<ul class="fed-drop-head fed-padding fed-part-rows">
+			<li class="fed-padding fed-col-xs4 fed-part-eone fed-font-xvi">评论区</li>
+		</ul>
+	</div>
+	<div id="waline"></div>
+</div>
 </div>
 </div>
 
@@ -313,6 +327,25 @@ if($_GET['clar']!=''&&$_GET['p']!=''){
         hls.loadSource('<?php echo $initial_url; ?>')
     })
     player.mount('#fed-play-iframe')
+    
+    const waline = new Waline({
+        el: '#waline',
+        dark: 'auto',
+        emoji: [
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/weibo',
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/bilibili',
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/alus',
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/qq',
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/tieba',
+            'https://cdn.jsdelivr.net/gh/walinejs/emojis@1.0.0/tw-emoji'
+        ],
+        visitor: "true",
+        comment: "true",
+        path: "<?php echo $waline_page_url; ?>",
+        serverURL: 'https://comment.maware.cc/'
+    });
+
+    
 </script>
 </body>
 </html>
